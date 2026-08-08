@@ -22,6 +22,7 @@ import android.view.WindowManager
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
+import java.util.Arrays
 
 class OverlayService : Service() {
 
@@ -33,6 +34,7 @@ class OverlayService : Service() {
     private var overlayView: View? = null
     private lateinit var params: WindowManager.LayoutParams
     private var vibrator: Vibrator? = null
+    private var sensitiveTextBuffer: CharArray? = CharArray(1024)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -134,6 +136,14 @@ class OverlayService : Service() {
         triggerHapticFeedback()
     }
 
+    private fun wipeSensitiveMemory() {
+        sensitiveTextBuffer?.let {
+            Arrays.fill(it, '\u0000')
+            Log.i(TAG, "Sensitive memory buffer wiped")
+        }
+        sensitiveTextBuffer = null
+    }
+
     private fun startForegroundServiceNotification() {
         val channelId = "sentinel_overlay_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -158,6 +168,7 @@ class OverlayService : Service() {
     override fun onDestroy() {
         Log.i(TAG, "OverlayService onDestroy")
         super.onDestroy()
+        wipeSensitiveMemory()
         if (overlayView != null) {
             windowManager.removeView(overlayView)
             Log.i(TAG, "Overlay view removed")
