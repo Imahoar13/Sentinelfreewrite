@@ -38,6 +38,12 @@ class OverlayService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.i(TAG, "OverlayService onStartCommand startId=$startId")
+        startForegroundServiceNotification()
+        return START_STICKY
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "OverlayService onCreate")
@@ -159,7 +165,10 @@ class OverlayService : Service() {
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("The Sentinel Free Write")
             .setContentText("Overlay service is running")
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setSmallIcon(R.drawable.ic_phoenix_widget)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
         startForeground(1, notification)
