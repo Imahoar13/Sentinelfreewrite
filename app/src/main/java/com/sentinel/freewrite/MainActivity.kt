@@ -1,7 +1,9 @@
 package com.sentinel.freewrite
 
 import android.app.Activity
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -15,6 +17,7 @@ import android.widget.TextView
 class MainActivity : Activity() {
     companion object {
         private const val TAG = "SentinelMain"
+        private const val NOTIFICATION_PERMISSION_REQUEST = 1001
     }
 
     private lateinit var statusText: TextView
@@ -77,6 +80,34 @@ class MainActivity : Activity() {
             return
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.i(TAG, "Requesting notification permission before starting OverlayService")
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                NOTIFICATION_PERMISSION_REQUEST
+            )
+            return
+        }
+
+        startOverlayService()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != NOTIFICATION_PERMISSION_REQUEST) return
+
+        val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        Log.i(TAG, "Notification permission result: granted=$granted")
+        startOverlayService()
+    }
+
+    private fun startOverlayService() {
         Log.i(TAG, "Starting OverlayService")
         startForegroundService(Intent(this, OverlayService::class.java))
         statusText.text = "Floating widget started"
