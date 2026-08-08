@@ -11,26 +11,38 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.AnimationUtils
+import android.widget.ImageView
 import androidx.core.app.NotificationCompat
 
 class OverlayService : Service() {
 
+    companion object {
+        private const val TAG = "SentinelOverlay"
+    }
+
     private lateinit var windowManager: WindowManager
     private var overlayView: View? = null
     private lateinit var params: WindowManager.LayoutParams
+    private var vibrator: Vibrator? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "OverlayService onCreate")
         startForegroundServiceNotification()
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         
         // Inflate your floating widget layout
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -56,8 +68,14 @@ class OverlayService : Service() {
             y = 100
         }
 
-        // Add touch listener to allow dragging the floating widget across the screen
-        overlayView?.setOnTouchListener(object : View.OnTouchListener {
+        windowManager.addView(overlayView, params)
+        Log.i(TAG, "Overlay view attached at x=${params.x}, y=${params.y}")
+
+        val phoenixIcon = overlayView?.findViewById<ImageView>(R.id.phoenix_icon)
+        phoenixIcon?.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse_anim))
+        Log.i(TAG, "Phoenix pulse animation started")
+
+        phoenixIcon?.setOnTouchListener(object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
             private var initialTouchX = 0f
@@ -70,6 +88,8 @@ class OverlayService : Service() {
                         initialY = params.y
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
+                        Log.d(TAG, "Touch down at x=${event.rawX}, y=${event.rawY}")
+                        triggerHapticFeedback()
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -78,12 +98,38 @@ class OverlayService : Service() {
                         windowManager.updateViewLayout(overlayView, params)
                         return true
                     }
+                    MotionEvent.ACTION_UP -> {
+                        val isClick = Math.abs(event.rawX - initialTouchX) < 10 &&
+                            Math.abs(event.rawY - initialTouchY) < 10
+                        Log.d(TAG, "Touch up at x=${event.rawX}, y=${event.rawY}, isClick=$isClick")
+                        if (isClick) {
+                            onPhoenixWidgetClicked()
+                        }
+                        return true
+                    }
                 }
                 return false
             }
         })
+    }
 
-        windowManager.addView(overlayView, params)
+    private fun triggerHapticFeedback() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(30)
+            }
+            Log.d(TAG, "Haptic feedback triggered")
+        } catch (securityException: SecurityException) {
+            Log.e(TAG, "Haptic feedback unavailable; check android.permission.VIBRATE", securityException)
+        }
+    }
+
+    private fun onPhoenixWidgetClicked() {
+        Log.i(TAG, "Phoenix widget clicked")
+        triggerHapticFeedback()
     }
 
     private fun startForegroundServiceNotification() {
@@ -108,11 +154,11 @@ class OverlayService : Service() {
     }
 
     override fun onDestroy() {
+        Log.i(TAG, "OverlayService onDestroy")
         super.onDestroy()
         if (overlayView != null) {
             windowManager.removeView(overlayView)
+            Log.i(TAG, "Overlay view removed")
         }
     }
 }
-
-Sent from AOL on Android
