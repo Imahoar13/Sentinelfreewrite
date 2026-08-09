@@ -175,7 +175,7 @@ class OverlayService : Service() {
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("The Sentinel Free Write")
             .setContentText("Overlay service is running")
-            .setSmallIcon(R.drawable.ic_phoenix_widget)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
