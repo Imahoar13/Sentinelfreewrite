@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local Android SDK configuration
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.navigation/
+
+# Native build output
+
+# IDE and OS files
+.DS_Store
+captures/
+
+# Keystores and signing material
+*.jks
+*.keystore
+*.p12
